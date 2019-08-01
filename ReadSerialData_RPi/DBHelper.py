@@ -2,14 +2,19 @@ __author__ = 'suren'
 import MySQLdb
 from datetime import datetime, timedelta
 from Models.Court_usage import Court_usage
+import logging
+import logging.config
 
 
+# logging.config.fileConfig("logging.ini")
+log=logging.getLogger(__name__)
 class DBHelper:
+
     last_update_row_id = 0;
     def getConn(self):
-        print "Openning DB Connection..."
+        log.info("Openning DB Connection...")
         db = MySQLdb.connect("localhost", "pi_user", "raspberry", "FB_MANAGE_V01")
-        print "DB Connection opened..."
+        log.info("DB Connection opened...")
         sql = "UPDATE sequence SET id=LAST_INSERT_ID(id+1);"
         cursor = db.cursor()
         try:
@@ -18,20 +23,16 @@ class DBHelper:
 
         except Exception, e:
             db.rollback()
-            print 'Caught Exception: %s' % e
+            # print 'Caught Exception: %s' % e
+            log.error("Exception: ",exc_info=True)
 
         return db
 
     def update_court_usage(self,court_usage):
         status = 0;
         court_usage_update_sql = "UPDATE court_usage SET curr_state = '%s', end_time = '%s', run_time = '%s' WHERE row_id = %s" %\
-                                    ("CLOSED", court_usage.end_time, court_usage.run_time, court_usage.row_id)
-        # court_usage_update_sql = "UPDATE court_usage SET curr_state = '%s', end_time = '%s', run_time = '%s' WHERE row_id = %s" % \
-        #                          (
-        #                          court_usage.curr_state, court_usage.end_time, court_usage.run_time, court_usage.row_id)
-        # courts_update_sql = "UPDATE courts SET curr_state = '%s' WHERE court_no = %s" % (court_usage.curr_state, court_usage.court_no)
-        # courts_update_sql = "UPDATE courts SET curr_state = '%s' WHERE court_no = %s" % (court_usage.curr_state, court_usage.court_no)
-        print "court_usage Update SQL: ", court_usage_update_sql
+                                    ("FREE", court_usage.end_time, court_usage.run_time, court_usage.row_id)
+        log.info("court_usage Update SQL: %s", court_usage_update_sql)
 
         db = self.getConn()
         cursor = db.cursor()
@@ -45,14 +46,15 @@ class DBHelper:
             total_run_timedelta_obj = table_runtime_delta_obj + runtime_delta_obj
             courts_update_sql = "UPDATE courts SET curr_state = '%s', total_run_time = '%s'  WHERE court_no = %s" % (
                 court_usage.curr_state, str(total_run_timedelta_obj), court_usage.court_no)
-            print("courts Update SQL: ", courts_update_sql)
+            log.info("courts Update SQL: ", courts_update_sql)
             cursor.execute(courts_update_sql)
             db.commit()
-            print "Court Usage & Courts table Updated.."
+            log.info("Court Usage & Courts table Updated..")
 
         except Exception, e:
             db.rollback()
-            print 'Caught Exception: %s' % e.__str__()
+            # print 'Caught Exception: %s' % e.__str__()
+            log.error("Exception:", exc_info=True)
             status = 1;
         finally:
             db.close()
@@ -69,20 +71,20 @@ class DBHelper:
                   Court_usage.court_no, Court_usage.curr_state, Court_usage.start_time, Court_usage.end_time,
                   Court_usage.run_time, self.last_update_row_id)
         courts_update_sql = "UPDATE courts SET curr_state = '%s' WHERE court_no = %s" % (Court_usage.curr_state, Court_usage.court_no)
-        print("Update SQL while insert: ",courts_update_sql)
+        log.info("Update SQL while insert: %s",courts_update_sql)
         db = self.getConn()
         cursor = db.cursor()
-        print "SQL: ", sql
+        log.info("SQL: %s", sql)
         try:
             cursor.execute(sql)
 
             cursor.execute(courts_update_sql)
             db.commit()
-            print "Court Usage record inserted into table.."
+            log.info("Court Usage record inserted into table..")
 
         except Exception, e:
             db.rollback()
-            print 'Caught Exception: %s' % e
+            log.error('Caught Exception:',exc_info=True)
             status = 1;
         finally:
             db.close()
@@ -93,7 +95,7 @@ class DBHelper:
         sql = "SELECT * FROM court_usage WHERE curr_state = 'OCC' AND court_no = %s " % (court_no);
         db = self.getConn()
         cursor = db.cursor()
-        print sql
+        log.info(sql)
         try:
             cursor.execute(sql)
             results = cursor.fetchall()
@@ -111,10 +113,10 @@ class DBHelper:
                 return
         except Exception, e:
             db.rollback()
-            print 'Caught Exception: %s' % e
+            log.error('Caught Exception:', exc_info=True)
             status = 1;
         finally:
-            print "DB Close"
+            log.info("DB Close")
             db.close()
 
 
@@ -128,14 +130,14 @@ class DBHelper:
             sql1 = "SELECT * FROM sequence"
             cursor.execute(sql1)
             results = cursor.fetchall()
-            # print results
+            # log.info results
             for row in results:
                 self.last_update_row_id = int(row[0]) + 1
-            print "Sequence Updated"
-            print self.last_update_row_id
+            log.info("Sequence Updated")
+            log.info( self.last_update_row_id)
         except Exception, e:
             db.rollback()
-            print 'Caught Exception: %s' % e
+            log.error( 'Caught Exception:', exc_info=True)
         finally:
             db.close()
 

@@ -27,7 +27,7 @@ void loop() {
 void processSwitch_2() {
   static unsigned long last_interrupt_time = 0;
   unsigned long interrupt_time = millis();
-  if (interrupt_time - last_interrupt_time > 500)
+  if (interrupt_time - last_interrupt_time > 200)
   {
     delay(100);
     if (state_2 != digitalRead(interruptPin_2)) {
@@ -47,7 +47,7 @@ void processSwitch_2() {
 void processSwitch_3() {
   static unsigned long last_interrupt_time = 0;
   unsigned long interrupt_time = millis();
-  if (interrupt_time - last_interrupt_time > 500)
+  if (interrupt_time - last_interrupt_time > 200)
   {
     delay(100);
     if (state_3 != digitalRead(interruptPin_3)) {
